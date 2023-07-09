@@ -1,0 +1,5 @@
+(lang dune 3.2)
+(name jasmin-language-server)
+(license MIT)
+(authors "The Jasmin development team")
+(using menhir 2.1)

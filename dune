@@ -1,0 +1,7 @@
+(alias
+   (name default)
+    (deps jasmin-language-server.install))
+(env
+ (dev     (flags :standard -w -9))
+ (release     (flags :standard -w -9)))
+(vendored_dirs jasmin-compiler)

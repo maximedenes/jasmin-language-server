@@ -1,0 +1,7 @@
+(library
+  (name tests)
+  (flags (:standard -rectypes))
+  (libraries controller)
+  (preprocess
+    (pps ppx_sexp_conv ppx_inline_test ppx_assert))
+  (inline_tests))

@@ -1,0 +1,63 @@
+name: Build and test
+
+on:
+  pull_request:
+  push:
+
+jobs:
+
+  nix-dev-build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      with:
+        submodules: true
+    - name: Configure Dune
+      run: |
+        mkdir -p ~/.config/dune
+        cat <<EOF > ~/.config/dune/config
+        (lang dune 3.2)
+        (display short)
+        EOF
+    - uses: cachix/install-nix-action@v22
+      with:
+        nix_path: nixpkgs=channel:nixos-unstable
+    - run: nix develop -c bash -c "dune build"
+    - run: nix develop -c bash -c "dune runtest"
+
+  opam-dev-build:
+    strategy:
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+        ocaml-compiler:
+          #- "4.11.0"
+          - "4.14.1"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - name: Install deps
+        env:
+          OPAMYES: true
+        run: |
+          opam install ./jasmin-language-server.opam --deps-only --with-doc --with-test
+      - name: Build jasmin-language-server
+        run: |
+          eval $(opam env)
+          dune build
+      - name: Unit tests
+        run: |
+          eval $(opam env)
+          dune runtest

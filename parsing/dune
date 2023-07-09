@@ -1,0 +1,8 @@
+(library
+ (name parsing)
+ (flags (:standard -rectypes -linkall))
+ (public_name jasmin-language-server.parsing)
+ (libraries jasmin.jasmin)
+ (preprocess
+  (pps ppx_deriving.show))
+)

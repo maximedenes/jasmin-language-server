@@ -1,0 +1,6 @@
+(library
+ (name language)
+ (flags (:standard -rectypes -linkall))
+ (public_name jasmin-language-server.language)
+ (libraries jasmin.jasmin jasminlsp parsing)
+)
