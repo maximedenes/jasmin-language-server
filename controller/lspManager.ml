@@ -95,7 +95,7 @@ let do_initialize params =
   in
   let textDocumentSync = `TextDocumentSyncKind TextDocumentSyncKind.Full in
   let completionProvider = CompletionOptions.create () in 
-  let hoverProvider = `Bool true in
+  let hoverProvider = `Bool false in
   let semanticTokensProvider = `SemanticTokensOptions semanticTokensOptions in
   let definitionProvider = `Bool true in
   let workspace = ServerCapabilities.create_workspace ~fileOperations () in
