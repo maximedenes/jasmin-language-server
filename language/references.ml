@@ -32,7 +32,7 @@ let rec collect_instr_references acc instr =
   | Jasmin.Prog.Cwhile (_, stmt1, _, stmt2) ->
     let acc = collect_prog_references acc stmt1 in
     collect_prog_references acc stmt2
-  | Jasmin.Prog.Ccall (_, _, funname, _) ->
+  | Jasmin.Prog.Ccall (_, funname, _) ->
     let (start, end_) = positions_of_iloc instr.i_loc in
     let range = Lsp.Types.Range.{ start; end_ } in
     let r = { range; reference = RefFun funname.fn_name } in
