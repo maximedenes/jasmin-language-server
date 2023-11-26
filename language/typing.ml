@@ -83,6 +83,24 @@ and type_file get_ast arch_info (env, diagnostics, revdeps) from loc ~root_fname
       in
       (Env.exit_file env, diagnostics, revdeps), []
 
+let range_of_error_loc default_fname = function
+  | Jasmin.Utils.Lnone ->
+    let start = Position.create ~character:0 ~line:0 in
+    let end_ = Position.create ~character:0 ~line:0 in
+    default_fname, Range.create ~start ~end_
+  | Jasmin.Utils.Lone loc -> loc.loc_fname, Range.of_jasmin_loc loc
+  | Jasmin.Utils.Lmore iloc -> iloc.base_loc.loc_fname, Range.of_jasmin_loc iloc.base_loc
+
+let push_error_diag fname diagnostics e =
+  let buf = Buffer.create 128 in
+  let fmt = Format.formatter_of_buffer buf in
+  e.Jasmin.Utils.err_msg fmt;
+  Format.pp_print_flush fmt ();
+  let message = Buffer.contents buf in
+  let fname, range = range_of_error_loc fname e.Jasmin.Utils.err_loc in
+  let diag = Diagnostic.create ~range ~message ~severity:DiagnosticSeverity.Error () in
+  push_diag fname diag diagnostics
+
 let type_program get_ast ~fname target_arch =
   let (module P : ArchCoreWithAnalyze) =
     match target_arch with
@@ -107,7 +125,23 @@ let type_program get_ast ~fname target_arch =
   let pprog = Jasmin.Pretyping.Env.decls env in
   let references = References.collect_references pprog in (* FIXME do this analysis on ast, before typing *)
   begin try
-    let _prog = Jasmin.Compile.preprocess Arch.reg_size Arch.asmOp pprog in
+    let prog = Jasmin.Compile.preprocess Arch.reg_size Arch.asmOp pprog in
+    let cprog = Jasmin.Conv.cuprog_of_prog prog in
+    let visit_prog_after_pass ~debug s p =
+      if debug then () else ();
+      let open Jasmin in
+      if s == Compiler.Unrolling then CheckAnnot.check_no_for_loop p;
+      if s == Compiler.Unrolling then CheckAnnot.check_no_inline_instr p
+    in
+    let diagnostics =
+      match Jasmin.Compile.compile (module Arch) visit_prog_after_pass prog cprog with
+      | Jasmin.Utils0.Error e ->
+        let e = Jasmin.Conv.error_of_cerror (Jasmin.Printer.pp_err ~debug:false) e in
+        push_error_diag fname diagnostics e
+      | Jasmin.Utils0.Ok _ -> diagnostics
+      | exception (Jasmin.Utils.HiError e) ->
+        push_error_diag fname diagnostics e
+    in
     {
       diagnostics;
       references;
